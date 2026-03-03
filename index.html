@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Fer Finances — Gestiona tus finanzas personales, balance mensual y préstamos">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Fer Finances</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            300: '#6ee7b7',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        dark: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Firebase SDKs removidos: Ahora se usa Node.js Backend -->
+</head>
+
+<body class="bg-dark-950 text-dark-100 font-sans min-h-screen">
+
+    <!-- ==================== LOADING SCREEN ==================== -->
+    <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-dark-950">
+        <div class="text-center">
+            <div
+                class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 mb-4 animate-pulse-slow">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h1 class="text-xl font-bold text-white">Fer Finances</h1>
+            <p class="text-dark-400 text-sm mt-1">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div id="app-screen" class="pb-20">
+        <!-- Header -->
+        <header id="app-header"
+            class="sticky top-0 z-30 px-4 pt-3 pb-2 bg-dark-950/80 backdrop-blur-xl border-b border-dark-800/50">
+            <div class="max-w-lg mx-auto flex items-center justify-between">
+                <div>
+                    <h1 id="page-title" class="text-lg font-bold text-white">Resumen</h1>
+                </div>
+                <button onclick="handleLogout()" class="hidden p-2 rounded-xl hover:bg-dark-800/60 transition-colors"
+                    title="Cerrar sesión">
+                    <svg class="w-5 h-5 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Page Content Container -->
+        <main class="max-w-lg mx-auto px-4 pt-4">
+            <!-- ========== DASHBOARD VIEW (BUDGET) ========== -->
+            <div id="view-dashboard" class="view-container">
+                <!-- No month selector (Global Budget) -->
+
+                <!-- Budget Summary Card -->
+                <div class="glass-card rounded-2xl p-5 mb-4 relative overflow-hidden">
+                    <div
+                        class="absolute top-0 right-0 w-32 h-32 bg-brand-500/5 rounded-full -translate-y-1/2 translate-x-1/2">
+                    </div>
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-dark-400 text-sm font-medium">Saldo Disponible</p>
+                        <button onclick="openBudgetModal()"
+                            class="text-brand-400 text-xs font-semibold hover:underline">Configurar</button>
+                    </div>
+                    <p id="balance-amount" class="text-3xl font-bold text-white mb-4">S/ 0.00</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-dark-800/40 rounded-xl p-3 border border-dark-700/30">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <div class="w-2 h-2 rounded-full bg-brand-400"></div>
+                                <span class="text-dark-400 text-xs">Ingreso Neto</span>
+                            </div>
+                            <p id="income-amount" class="text-lg font-semibold text-brand-400">S/ 0.00</p>
+                        </div>
+                        <div class="bg-dark-800/40 rounded-xl p-3 border border-dark-700/30">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <div class="w-2 h-2 rounded-full bg-red-400"></div>
+                                <span class="text-dark-400 text-xs">Gastos Fijos</span>
+                            </div>
+                            <p id="expense-amount" class="text-lg font-semibold text-red-400">S/ 0.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fixed Expenses List -->
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-white">Gastos Fijos Detallados</h3>
+                    <button onclick="openBudgetModal()"
+                        class="text-brand-400 text-xs font-medium hover:text-brand-300">Editar</button>
+                </div>
+                <div id="fixed-expenses-list" class="space-y-2 mb-4">
+                    <div class="text-center py-8 text-dark-500 text-sm">No has configurado gastos todavía</div>
+                </div>
+            </div>
+
+            <!-- ========== LOANS VIEW ========== -->
+            <div id="view-loans" class="view-container hidden">
+                <!-- Loan Stats -->
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div class="glass-card rounded-2xl p-4">
+                        <p class="text-dark-400 text-xs font-medium mb-1">Por cobrar</p>
+                        <p id="lent-total" class="text-xl font-bold text-brand-400">S/ 0.00</p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4">
+                        <p class="text-dark-400 text-xs font-medium mb-1">Por pagar</p>
+                        <p id="borrowed-total" class="text-xl font-bold text-orange-400">S/ 0.00</p>
+                    </div>
+                </div>
+
+                <!-- Loan Filters -->
+                <div class="flex gap-2 mb-4">
+                    <button onclick="filterLoans('all')" data-loan-filter="all"
+                        class="loan-filter-btn active shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all">
+                        Todos
+                    </button>
+                    <button onclick="filterLoans('lent')" data-loan-filter="lent"
+                        class="loan-filter-btn shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all">
+                        Presté
+                    </button>
+                    <button onclick="filterLoans('borrowed')" data-loan-filter="borrowed"
+                        class="loan-filter-btn shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all">
+                        Me prestaron
+                    </button>
+                </div>
+
+                <div id="loans-list" class="space-y-3">
+                    <div class="text-center py-8 text-dark-500 text-sm">No hay préstamos registrados</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- FAB (Floating Action Button) -->
+        <button id="fab-btn" onclick="openLoanModal()"
+            class="fixed bottom-24 right-5 z-20 w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-lg shadow-brand-500/30 flex items-center justify-center active:scale-90 transition-transform">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+        </button>
+
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 z-30 bg-dark-900/90 backdrop-blur-xl border-t border-dark-800/50">
+            <div class="max-w-lg mx-auto flex items-center justify-around py-2">
+                <button onclick="navigateTo('dashboard')" data-nav="dashboard"
+                    class="nav-btn active flex flex-col items-center gap-0.5 px-10 py-1.5 rounded-xl transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span class="text-[10px] font-medium">Balance</span>
+                </button>
+                <button onclick="navigateTo('loans')" data-nav="loans"
+                    class="nav-btn flex flex-col items-center gap-0.5 px-10 py-1.5 rounded-xl transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span class="text-[10px] font-medium">Préstamos</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- ==================== MODAL: Configurar Presupuesto ==================== -->
+    <div id="modal-budget" class="modal-overlay hidden">
+        <div class="modal-content max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-semibold text-white">Configurar Mes</h3>
+                <button onclick="closeModal('modal-budget')"
+                    class="p-2 rounded-xl hover:bg-dark-800/60 transition-colors">
+                    <svg class="w-5 h-5 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="budget-form" onsubmit="saveBudget(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-dark-300 mb-1.5">Ingreso Neto Mensual</label>
+                    <input type="number" id="budget-net-income" step="0.01" min="0" required
+                        class="w-full px-4 py-3 rounded-xl bg-dark-800/80 border border-dark-700/50 text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-all text-lg"
+                        placeholder="0.00">
+                </div>
+
+                <div class="pt-2">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-dark-300">Gastos Fijos</label>
+                        <button type="button" onclick="addFixedExpenseRow()"
+                            class="text-xs text-brand-400 font-semibold">+ Agregar</button>
+                    </div>
+                    <div id="budget-expenses-container" class="space-y-2">
+                        <!-- Rows will be added here -->
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit"
+                        class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 text-white font-semibold hover:from-brand-600 hover:to-brand-700 active:scale-[0.98] transition-all shadow-lg shadow-brand-500/25">
+                        Guardar Presupuesto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: Add/Edit Loan ==================== -->
+    <div id="modal-loan" class="modal-overlay hidden">
+        <div class="modal-content max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h3 id="modal-loan-title" class="text-lg font-semibold text-white">Nuevo Préstamo</h3>
+                <button onclick="closeModal('modal-loan')"
+                    class="p-2 rounded-xl hover:bg-dark-800/60 transition-colors">
+                    <svg class="w-5 h-5 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="loan-form" onsubmit="saveLoan(event)" class="space-y-4">
+                <input type="hidden" id="loan-id">
+
+                <!-- Type Toggle -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="setLoanType('lent')" id="btn-loan-lent"
+                        class="loan-type-btn active py-2.5 rounded-xl text-sm font-medium transition-all">
+                        💰 Presté
+                    </button>
+                    <button type="button" onclick="setLoanType('borrowed')" id="btn-loan-borrowed"
+                        class="loan-type-btn py-2.5 rounded-xl text-sm font-medium transition-all">
+                        🤝 Me prestaron
+                    </button>
+                </div>
+                <input type="hidden" id="loan-type" value="lent">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-dark-300 mb-1.5">Persona / Entidad</label>
+                        <input type="text" id="loan-person" required
+                            class="w-full px-4 py-3 rounded-xl bg-dark-800/80 border border-dark-700/50 text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-all"
+                            placeholder="Ej: Banco BCP, Juan Pérez">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-dark-300 mb-1.5">Monto Total</label>
+                        <input type="number" id="loan-amount" step="0.01" min="0.01" required
+                            class="w-full px-4 py-3 rounded-xl bg-dark-800/80 border border-dark-700/50 text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-all"
+                            placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-dark-300 mb-1.5">TEA (%)</label>
+                        <input type="number" id="loan-tea" step="0.01" min="0" required
+                            class="w-full px-4 py-3 rounded-xl bg-dark-800/80 border border-dark-700/50 text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-all"
+                            placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-dark-300 mb-1.5">N° Cuotas</label>
+                        <input type="number" id="loan-installments" min="1" required
+                            class="w-full px-4 py-3 rounded-xl bg-dark-800/80 border border-dark-700/50 text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-all"
+                            placeholder="12">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-dark-300 mb-1.5">Primer Pago</label>
+                        <input type="date" id="loan-date" required
+                            class="w-full px-4 py-3 rounded-xl bg-dark-800/80 border border-dark-700/50 text-white focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-all text-xs">
+                    </div>
+                    <div class="col-span-2 flex items-center gap-2 pt-2">
+                        <input type="checkbox" id="loan-is-fixed"
+                            class="w-5 h-5 rounded border-dark-700 bg-dark-800 text-brand-500 focus:ring-brand-500/25">
+                        <label for="loan-is-fixed" class="text-sm font-medium text-dark-200">Incluir cuota en el balance
+                            mensual (Gasto Fijo)</label>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit"
+                        class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 text-white font-semibold hover:from-brand-600 hover:to-brand-700 active:scale-[0.98] transition-all shadow-lg shadow-brand-500/25">
+                        Calcular y Guardar
+                    </button>
+                    <button type="button" id="loan-delete-btn" onclick="deleteLoan()"
+                        class="hidden w-full mt-2 py-2 rounded-xl text-red-400 text-sm font-medium hover:bg-red-500/10 transition-all">
+                        Eliminar Préstamo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: Add Payment to Loan ==================== -->
+    <div id="modal-payment" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-semibold text-white">Registrar Pago</h3>
+                <button onclick="closeModal('modal-payment')"
+                    class="p-2 rounded-xl hover:bg-dark-800/60 transition-colors">
+                    <svg class="w-5 h-5 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="payment-form" onsubmit="savePayment(event)" class="space-y-4">
+                <input type="hidden" id="payment-loan-id">
+                <div>
+                    <label class="block text-sm font-medium text-dark-300 mb-1.5">Monto del pago</label>
+                    <input type="number" id="payment-amount" step="0.01" min="0.01" required
+                        class="w-full px-4 py-3 rounded-xl bg-dark-800/80 border border-dark-700/50 text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-all text-lg"
+                        placeholder="0.00">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-dark-300 mb-1.5">Fecha</label>
+                    <input type="date" id="payment-date" required
+                        class="w-full px-4 py-3 rounded-xl bg-dark-800/80 border border-dark-700/50 text-white focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-all">
+                </div>
+                <button type="submit"
+                    class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 text-white font-semibold hover:from-brand-600 hover:to-brand-700 active:scale-[0.98] transition-all shadow-lg shadow-brand-500/25">
+                    Registrar Pago
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: Loan Detail ==================== -->
+    <div id="modal-loan-detail" class="modal-overlay hidden">
+        <div class="modal-content max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h3 id="loan-detail-title" class="text-lg font-semibold text-white">Detalle del Préstamo</h3>
+                <button onclick="closeModal('modal-loan-detail')"
+                    class="p-2 rounded-xl hover:bg-dark-800/60 transition-colors">
+                    <svg class="w-5 h-5 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="loan-detail-content"></div>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST ==================== -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden">
+        <div
+            class="px-4 py-3 rounded-xl bg-dark-800 border border-dark-700/50 shadow-xl text-sm font-medium text-white flex items-center gap-2">
+            <span id="toast-icon"></span>
+            <span id="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- ==================== GLOBAL LOADER ==================== -->
+    <div id="global-loader"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-dark-950/40 backdrop-blur-sm hidden">
+        <div class="flex flex-col items-center">
+            <div class="w-12 h-12 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin"></div>
+            <p class="text-white text-xs font-medium mt-3">Procesando...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/loans.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
