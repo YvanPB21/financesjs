@@ -99,13 +99,19 @@ function showScreen(screenId) {
     if (appScreen) appScreen.classList.remove('hidden');
 }
 
-function initApp() {
+async function initApp() {
+    try {
+        const security = await api.get('/settings/security');
+        if (security.pinEnabled) {
+            lockApp();
+        }
+    } catch (error) {
+        console.error('Error al verificar seguridad:', error);
+    }
+
     showScreen('app-screen');
     initRouter();
-
-    // Load initial data
-    if (currentView === 'dashboard') loadDashboard();
-    else if (currentView === 'loans') loadLoans();
+    refreshCurrentView();
 }
 
 // Initialize immediately

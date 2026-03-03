@@ -4,10 +4,12 @@ let currentView = 'dashboard';
 
 const viewTitles = {
     dashboard: 'Balance General',
-    loans: 'Préstamos'
+    loans: 'Préstamos',
+    settings: 'Ajustes'
 };
 
 function navigateTo(view) {
+    if (isLocked) return;
     if (view === currentView) return;
 
     currentView = view;
@@ -38,11 +40,12 @@ function navigateTo(view) {
     // Refresh view data
     if (view === 'dashboard') loadDashboard();
     else if (view === 'loans') loadLoans();
+    else if (view === 'settings') loadSettings();
 }
 
 function initRouter() {
     const hash = window.location.hash.replace('#', '') || 'dashboard';
-    const validViews = ['dashboard', 'loans'];
+    const validViews = ['dashboard', 'loans', 'settings'];
     const view = validViews.includes(hash) ? hash : 'dashboard';
     currentView = view;
 
@@ -62,7 +65,7 @@ function initRouter() {
 // Handle back button
 window.addEventListener('hashchange', () => {
     const hash = window.location.hash.replace('#', '') || 'dashboard';
-    const validViews = ['dashboard', 'loans'];
+    const validViews = ['dashboard', 'loans', 'settings'];
     if (validViews.includes(hash) && hash !== currentView) {
         navigateTo(hash);
     }

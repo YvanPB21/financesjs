@@ -124,6 +124,51 @@ app.delete('/api/loans/:id', async (req, res) => {
     }
 });
 
+// Security Settings (PIN)
+app.get('/api/settings/security', async (req, res) => {
+    try {
+        const doc = await db.collection('settings').doc('security').get();
+        if (!doc.exists) {
+            return res.json({ pinEnabled: false });
+        }
+        const data = doc.data();
+        res.json({ pinEnabled: !!data.pin });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/settings/security/verify', async (req, res) => {
+    try {
+        const { pin } = req.body;
+        const doc = await db.collection('settings').doc('security').get();
+        if (!doc.exists || !doc.data().pin) {
+            return res.json({ success: true }); // No PIN set
+        }
+        const isValid = doc.data().pin === pin;
+        res.json({ success: isValid });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/settings/security/setup', async (req, res) => {
+    try {
+        const { pin, enabled } = req.body;
+        if (enabled === false) {
+            await db.collection('settings').doc('security').update({ pin: null });
+        } else {
+            await db.collection('settings').doc('security').set({
+                pin: pin,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname)));
 
