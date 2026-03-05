@@ -52,6 +52,7 @@ async function openLoanModal(loanId = null) {
             document.getElementById('loan-amount').value = loan.amount;
             document.getElementById('loan-tea').value = loan.tea;
             document.getElementById('loan-installments').value = loan.installmentsCount;
+            document.getElementById('loan-installment-amount').value = loan.monthlyPayment;
             document.getElementById('loan-date').value = loan.date;
             document.getElementById('loan-is-fixed').checked = loan.isFixedExpense || false;
             deleteBtn.classList.remove('hidden');
@@ -71,9 +72,8 @@ async function saveLoan(event) {
     const amount = parseFloat(document.getElementById('loan-amount').value);
     const tea = parseFloat(document.getElementById('loan-tea').value);
     const n = parseInt(document.getElementById('loan-installments').value);
+    const monthlyPayment = parseFloat(document.getElementById('loan-installment-amount').value);
     const date = document.getElementById('loan-date').value;
-
-    const monthlyPayment = calculateMonthlyPayment(amount, tea, n);
 
     // Generar cuotas iniciales si es nuevo
     let installments = [];
